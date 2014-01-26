@@ -221,12 +221,14 @@ static size_t write_varint128(char *buffer, size_t offset, int64_t value) {
     varint_size_buckets[needed_bytes - 1]++;
 
     for (position = 0; position < needed_bytes && position != 8; position++) {
+        printf("writing at %d %d (%x)\n", position, value & 0x7f, value & 0x7f);
         buffer[offset + position] = value & 0x7f;
         if (position != needed_bytes - 1) buffer[offset + position] = buffer[offset + position] | 0x80;
         value = value >> 7;
     }
 
     if (position == 8) {
+        printf(" this one has the full 9 bytes! :)\n");
         buffer[offset + position] = value;
     }
 
