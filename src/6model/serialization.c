@@ -207,16 +207,31 @@ static size_t varintsize(int64_t value) {
     return needed_bytes;
 }
 
+int varint_bytes_saved;
+int *varint_size_buckets[9];
+
+static size_t read_varint128(char *buffer, size_t offset, int64_t *value);
 static size_t write_varint128(char *buffer, size_t offset, int64_t value) {
     // do we hvae to compare < or <= ?
     size_t position;
     size_t needed_bytes = varintsize(value);
+    int64_t orig_value = value;
+
+    varint_bytes_saved += (8 - needed_bytes);
+    varint_size_buckets[needed_bytes - 1]++;
 
     for (position = 0; position < needed_bytes; position++) {
         buffer[offset + position] = value & 0x7f;
         if (position != needed_bytes - 1) buffer[offset + position] = buffer[offset + position] | 0x80;
         value = value >> 7;
     }
+    
+    MVMint64 confirmed_value;
+    read_varint128(buffer, offset, &confirmed_value);
+    if (confirmed_value != orig_value) {
+        printf(" We messed up a value! %d != %d %x\n", orig_value, confirmed_value, confirmed_value);
+    }
+    
     return needed_bytes;
 }
 
@@ -1077,6 +1092,12 @@ MVMString * MVM_serialization_serialize(MVMThreadContext *tc, MVMSerializationCo
     MVMString *result   = NULL;
     MVMint32   sc_elems = (MVMint32)sc->body->num_objects;
 
+    size_t bucket;
+
+    varint_bytes_saved = 0;
+    for (bucket = 0; bucket < 9; bucket++)
+        varint_size_buckets[bucket] = 0;
+
     /* We don't sufficiently root things in here for the GC, so enforce gen2
      * allocation. */
     MVM_gc_allocate_gen2_default_set(tc);
@@ -1140,6 +1161,10 @@ MVMString * MVM_serialization_serialize(MVMThreadContext *tc, MVMSerializationCo
 
     /* Exit gen2 allocation. */
     MVM_gc_allocate_gen2_default_clear(tc);
+
+    printf("\n\nusing varints saved us %d bytes in serialization\n", varint_bytes_saved);
+    for (bucket = 0; bucket < 9; bucket++)
+        printf("bucket %d: %d\n", bucket + 1, varint_size_buckets[bucket]);
 
     return result;
 }
