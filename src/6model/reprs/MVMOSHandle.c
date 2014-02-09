@@ -58,15 +58,6 @@ static void gc_free(MVMThreadContext *tc, MVMObject *obj) {
             && tc->instance->stderr_handle != obj) {
                 uv_unref((uv_handle_t *)handle->body.u.handle);
                 uv_close(handle->body.u.handle, NULL);
-                if (handle->body.u.process)
-#ifdef _WIN32
-                    uv_process_close(tc->loop, handle->body.u.process);
-#else
-                    waitpid(handle->body.u.process->pid);
-#endif
-                uv_unref((uv_handle_t *)handle->body.u.process);
-                uv_run(tc->loop, UV_RUN_DEFAULT);
-                handle->body.u.process = NULL;
             }
             break;
         case MVM_OSHANDLE_HANDLE:

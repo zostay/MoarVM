@@ -289,16 +289,6 @@ void MVM_file_close_fh(MVMThreadContext *tc, MVMObject *oshandle) {
         /* closing the in-/output std filehandle will shutdown the child process. */
         uv_unref((uv_handle_t*)handle->body.u.handle);
         uv_close((uv_handle_t*)handle->body.u.handle, NULL);
-        uv_run(tc->loop, UV_RUN_DEFAULT);
-        if (handle->body.u.process)
-#ifdef _WIN32
-            uv_process_close(tc->loop, handle->body.u.process);
-#else
-            waitpid(handle->body.u.process->pid);
-#endif
-        uv_unref((uv_handle_t *)handle->body.u.process);
-        uv_run(tc->loop, UV_RUN_DEFAULT);
-        handle->body.u.process = NULL;
     }
     else {
         if (uv_fs_close(tc->loop, &req, handle->body.u.fd, NULL) < 0) {
