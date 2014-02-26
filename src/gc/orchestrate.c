@@ -308,6 +308,9 @@ void MVM_gc_enter_from_allocator(MVMThreadContext *tc) {
 
     GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE, "Thread %d run %d : Entered from allocate\n");
 
+    /* Relieve some pressure */
+    tc->string_allocation_pressure = 0;
+
     /* Try to start the GC run. */
     if (MVM_trycas(&tc->instance->gc_start, 0, 1)) {
         MVMThread *last_starter = NULL;
@@ -397,6 +400,9 @@ void MVM_gc_enter_from_interrupt(MVMThreadContext *tc) {
 
     /* Count us in to the GC run. Wait for a vote to steal. */
     GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE, "Thread %d run %d : Entered from interrupt\n");
+
+    /* Relieve some pressure */
+    tc->string_allocation_pressure = 0;
 
     /* Only want to decrement it if it's 2 or greater... */
     while ((curr = MVM_load(&tc->instance->gc_start)) < 2

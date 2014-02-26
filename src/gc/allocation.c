@@ -110,6 +110,5 @@ void MVM_gc_allocated_string(MVMThreadContext *tc, size_t amount) {
     tc->string_allocation_pressure += amount > 1024 * 256 ? 1024 * 256 : amount;
     if (tc->string_allocation_pressure > MVM_STRING_PRESSURE_THRESHOLD) {
         MVM_store(&tc->gc_status, MVMGCStatus_INTERRUPTED_SELF);
-        tc->string_allocation_pressure = 0;
     }
 }
