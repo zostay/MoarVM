@@ -8,7 +8,11 @@
  * if the interrupt is delayed a bit. */
 #define GC_SYNC_POINT(tc) \
     if (tc->gc_status) { \
-        MVM_gc_enter_from_interrupt(tc); \
+        if (tc->gc_status == MVMGCStatus_INTERRUPTED_SELF) { \
+            MVM_gc_enter_from_allocator(tc); \
+        } else { \
+            MVM_gc_enter_from_interrupt(tc); \
+        } \
     }
 
 /* Different views of a register. */

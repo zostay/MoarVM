@@ -19,7 +19,13 @@ typedef enum {
      * run was triggered and the scanning work was stolen. A thread
      * that becomes unblocked upon seeing this will wait for the GC
      * run to be done. */
-    MVMGCStatus_STOLEN = 3
+    MVMGCStatus_STOLEN = 3,
+
+    /* Some function that doesn't want to do a GC run by itself
+     * decided, that it'd be a good idea to start a GC run.
+     * The difference tw INTERRUPT is, that we don't have to wait
+     * for another thread to start the GC when we find this flag. */
+    MVMGCStatus_INTERRUPTED_SELF = 4,
 } MVMGCStatus;
 
 /* Are we allocating in the nursery, or direct into generation 2? (The
@@ -117,6 +123,11 @@ struct MVMThreadContext {
 
     /* The second GC generation allocator. */
     MVMGen2Allocator *gen2;
+
+    /* Allocating strings doesn't put any pressure on the nursery.
+     * If we're allocating huge amounts, we should trigger a GC run
+     * manually. */
+    MVMuint64 string_allocation_pressure;
 
     /* Internal ID of the thread. */
     MVMuint32 thread_id;

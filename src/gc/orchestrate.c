@@ -34,6 +34,7 @@ static MVMuint32 signal_one_thread(MVMThreadContext *tc, MVMThreadContext *to_si
                 }
                 break;
             case MVMGCStatus_INTERRUPT:
+            case MVMGCStatus_INTERRUPTED_SELF:
                 GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE, "Thread %d run %d : thread %d already interrupted\n", to_signal->thread_id);
                 return 0;
             case MVMGCStatus_UNABLE:
@@ -196,6 +197,7 @@ static void finish_gc(MVMThreadContext *tc, MVMuint8 gen) {
             }
             MVM_cas(&other->gc_status, MVMGCStatus_STOLEN, MVMGCStatus_UNABLE);
             MVM_cas(&other->gc_status, MVMGCStatus_INTERRUPT, MVMGCStatus_NONE);
+            MVM_cas(&other->gc_status, MVMGCStatus_INTERRUPTED_SELF, MVMGCStatus_NONE);
         }
     }
     /* Signal acknowledgement of completing the cleanup,

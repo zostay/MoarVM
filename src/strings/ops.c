@@ -1102,6 +1102,7 @@ void MVM_string_flatten(MVMThreadContext *tc, MVMString *s) {
         return;
     }
     buffer = malloc(sizeof(MVMCodepoint32) * sgraphs);
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * sgraphs);
     if (IS_ROPE(s) && STRAND_DEPTH(s) == 1) {
         MVMStrandIndex strand;
         MVMStrandIndex last  = s->body.num_strands;
@@ -1144,6 +1145,8 @@ MVMString * MVM_string_escape(MVMThreadContext *tc, MVMString *s) {
     MVMCodepoint32 *buffer  = malloc(sizeof(MVMCodepoint32) * balloc);
     MVMStringIndex  bpos    = 0;
 
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * balloc);
+
     for (; spos < sgraphs; spos++) {
         MVMCodepoint32 cp = MVM_string_get_codepoint_at_nocheck(tc, s, spos);
         MVMCodepoint32 esc = 0;
@@ -1162,6 +1165,7 @@ MVMString * MVM_string_escape(MVMThreadContext *tc, MVMString *s) {
             if (bpos + 2 > balloc) {
                 balloc += 32;
                 buffer = realloc(buffer, sizeof(MVMCodepoint32) * balloc);
+                MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * 32);
             }
             buffer[bpos++] = '\\';
             buffer[bpos++] = esc;
@@ -1170,6 +1174,7 @@ MVMString * MVM_string_escape(MVMThreadContext *tc, MVMString *s) {
             if (bpos + 1 > balloc) {
                 balloc += 32;
                 buffer = realloc(buffer, sizeof(MVMCodepoint32) * balloc);
+                MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * 32);
             }
             buffer[bpos++] = cp;
         }
@@ -1190,6 +1195,8 @@ MVMString * MVM_string_flip(MVMThreadContext *tc, MVMString *s) {
     MVMStringIndex  spos    = 0;
     MVMCodepoint32 *rbuffer = malloc(sizeof(MVMCodepoint32) * sgraphs);
     MVMStringIndex  rpos    = sgraphs;
+
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * sgraphs);
 
     for (; spos < sgraphs; spos++)
         rbuffer[--rpos] = MVM_string_get_codepoint_at_nocheck(tc, s, spos);
@@ -1239,6 +1246,8 @@ MVMString * MVM_string_bitand(MVMThreadContext *tc, MVMString *a, MVMString *b) 
     MVMCodepoint32 *buffer = malloc(sizeof(MVMCodepoint32) * sgraphs);
     MVMStringIndex i, scanlen;
 
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * sgraphs);
+
     /* Binary-and up to the length of the shortest string. */
     for (i = 0; i < sgraphs; i++)
         buffer[i] = (MVM_string_get_codepoint_at_nocheck(tc, a, i)
@@ -1260,6 +1269,8 @@ MVMString * MVM_string_bitor(MVMThreadContext *tc, MVMString *a, MVMString *b) {
     MVMStringIndex sgraphs = (alen > blen ? alen : blen);
     MVMCodepoint32 *buffer = malloc(sizeof(MVMCodepoint32) * sgraphs);
     MVMStringIndex i, scanlen;
+
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * sgraphs);
 
     /* First, binary-or up to the length of the shortest string. */
     scanlen = alen > blen ? blen : alen;
@@ -1291,6 +1302,8 @@ MVMString * MVM_string_bitxor(MVMThreadContext *tc, MVMString *a, MVMString *b) 
     MVMStringIndex sgraphs = (alen > blen ? alen : blen);
     MVMCodepoint32 *buffer = malloc(sizeof(MVMCodepoint32) * sgraphs);
     MVMStringIndex i, scanlen;
+
+    MVM_gc_allocated_string(tc, sizeof(MVMCodepoint32) * sgraphs);
 
     /* First, binary-xor up to the length of the shorter string. */
     scanlen = alen > blen ? blen : alen;

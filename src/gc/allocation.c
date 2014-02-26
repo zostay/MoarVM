@@ -14,8 +14,7 @@ void * MVM_gc_allocate_nursery(MVMThreadContext *tc, size_t size) {
      * also; check if we've been signalled to collect. */
     /* Don't use a MVM_load(&tc->gc_status) here for performance, it's okay
      * if the interrupt is delayed a bit. */
-    if (tc->gc_status)
-        MVM_gc_enter_from_interrupt(tc);
+    GC_SYNC_POINT(tc);
 
     /* Guard against 0-byte allocation. */
     if (size > 0) {
@@ -103,4 +102,14 @@ void MVM_gc_allocate_gen2_default_set(MVMThreadContext *tc) {
 /* Sets allocation for this thread to be from the nursery by default. */
 void MVM_gc_allocate_gen2_default_clear(MVMThreadContext *tc) {
     tc->allocate_in = MVMAllocate_Nursery;
+}
+
+void MVM_gc_allocated_string(MVMThreadContext *tc, size_t amount) {
+    /* if we have a very big string, we don't want to cause a full collection
+     * after each and every allocation; especially since we may be swapping. */
+    tc->string_allocation_pressure += amount > 1024 * 256 ? 1024 * 256 : amount;
+    if (tc->string_allocation_pressure > MVM_STRING_PRESSURE_THRESHOLD) {
+        MVM_store(&tc->gc_status, MVMGCStatus_INTERRUPTED_SELF);
+        tc->string_allocation_pressure = 0;
+    }
 }
