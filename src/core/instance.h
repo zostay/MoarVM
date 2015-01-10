@@ -38,6 +38,7 @@ struct MVMStringConsts {
     MVMString *integer;
     MVMString *float_str;
     MVMString *bits;
+    MVMString *ctype;
     MVMString *unsigned_str;
     MVMString *find_method;
     MVMString *type_check;

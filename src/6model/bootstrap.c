@@ -535,6 +535,7 @@ static void string_consts(MVMThreadContext *tc) {
     string_creator(integer, "integer");
     string_creator(float_str, "float");
     string_creator(bits, "bits");
+    string_creator(ctype, "ctype");
     string_creator(unsigned_str, "unsigned");
     string_creator(find_method, "find_method");
     string_creator(type_check, "type_check");

@@ -1,3 +1,8 @@
+/* Numeric codes used used at compose-time to signal that bitsize should be
+ * computed from C types. */
+#define MVM_P6INT_CTYPE_INT  1
+#define MVM_P6INT_CTYPE_LONG 2
+
 /* Representation used by P6 native ints. */
 struct MVMP6intBody {
     /* Integer storage slot. */

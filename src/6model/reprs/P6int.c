@@ -104,13 +104,28 @@ static void compose(MVMThreadContext *tc, MVMSTable *st, MVMObject *info_hash) {
     MVMObject *info = MVM_repr_at_key_o(tc, info_hash, str_consts.integer);
     if (!MVM_is_null(tc, info)) {
         MVMObject *bits_o        = MVM_repr_at_key_o(tc, info, str_consts.bits);
+        MVMObject *ctype_o       = MVM_repr_at_key_o(tc, info, str_consts.ctype);
         MVMObject *is_unsigned_o = MVM_repr_at_key_o(tc, info, str_consts.unsigned_str);
+
+        if (!MVM_is_null(tc, bits_o) && !MVM_is_null(tc, ctype_o))
+            MVM_exception_throw_adhoc(tc, "MVMP6int: Can't set bits and ctype at the same time");
 
         if (!MVM_is_null(tc, bits_o)) {
             repr_data->bits = MVM_repr_get_int(tc, bits_o);
             if (repr_data->bits !=  1 && repr_data->bits !=  2 && repr_data->bits !=  4 && repr_data->bits != 8
              && repr_data->bits != 16 && repr_data->bits != 32 && repr_data->bits != 64)
                 MVM_exception_throw_adhoc(tc, "MVMP6int: Unsupported int size (%dbit)", repr_data->bits);
+        }
+        else if (!MVM_is_null(tc, ctype_o)) {
+            MVMint64 ctype = MVM_repr_get_int(tc, ctype_o);
+            switch (ctype) {
+            case MVM_P6INT_CTYPE_INT:
+                repr_data->bits = sizeof(int)*8;
+                break;
+            case MVM_P6INT_CTYPE_LONG:
+                repr_data->bits = sizeof(long)*8;
+                break;
+            }
         }
 
         if (!MVM_is_null(tc, is_unsigned_o)) {
