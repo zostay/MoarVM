@@ -174,6 +174,22 @@ MVMObject * MVM_nativecall_make_cstruct(MVMThreadContext *tc, MVMObject *type, v
     return result;
 }
 
+/* Constructs a boxed result using a CUnion REPR type. */
+MVMObject * MVM_nativecall_make_cunion(MVMThreadContext *tc, MVMObject *type, void *cunion) {
+    MVMObject *result = type;
+    if (cunion && type) {
+        MVMCUnionREPRData *repr_data = (MVMCUnionREPRData *)STABLE(type)->REPR_data;
+        if (REPR(type)->ID != MVM_REPR_ID_MVMCUnion)
+            MVM_exception_throw_adhoc(tc,
+                "Native call expected return type with CUnion representation, but got a %s", REPR(type)->name);
+        result = REPR(type)->allocate(tc, STABLE(type));
+        ((MVMCUnion *)result)->body.cunion = cunion;
+        if (repr_data->num_child_objs)
+            ((MVMCUnion *)result)->body.child_objs = MVM_calloc(repr_data->num_child_objs, sizeof(MVMObject *));
+    }
+    return result;
+}
+
 /* Constructs a boxed result using a CPointer REPR type. */
 MVMObject * MVM_nativecall_make_cpointer(MVMThreadContext *tc, MVMObject *type, void *ptr) {
     MVMObject *result = type;
