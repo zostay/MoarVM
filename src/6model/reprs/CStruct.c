@@ -161,11 +161,6 @@ static void compute_allocation_strategy(MVMThreadContext *tc, MVMObject *repr_in
                     bits = spec->bits;
                     align = spec->align;
 
-                    if (bits % 8) {
-                         MVM_exception_throw_adhoc(tc,
-                            "CStruct only supports native types that are a multiple of 8 bits wide (was passed: %ld)", bits);
-                    }
-
                     repr_data->attribute_locations[i] = (bits << MVM_CSTRUCT_ATTR_SHIFT) | MVM_CSTRUCT_ATTR_IN_STRUCT;
                     repr_data->flattened_stables[i] = STABLE(type);
                     if (REPR(type)->initialize) {
@@ -195,6 +190,8 @@ static void compute_allocation_strategy(MVMThreadContext *tc, MVMObject *repr_in
                 }
                 else if (type_id == MVM_REPR_ID_MVMCUnion) {
                     /* It's a CUnion. */
+                    MVMCUnionREPRData *cunion_repr_data = (MVMCUnionREPRData *)STABLE(type)->REPR_data;
+                    bits = cunion_repr_data->struct_size * 8;
                     repr_data->num_child_objs++;
                     repr_data->attribute_locations[i] = (cur_obj_attr++ << MVM_CSTRUCT_ATTR_SHIFT) | MVM_CSTRUCT_ATTR_CUNION;
                     repr_data->member_types[i] = type;
@@ -213,6 +210,11 @@ static void compute_allocation_strategy(MVMThreadContext *tc, MVMObject *repr_in
             else {
                 MVM_exception_throw_adhoc(tc,
                     "CStruct representation requires the types of all attributes to be specified");
+            }
+
+            if (bits % 8) {
+                 MVM_exception_throw_adhoc(tc,
+                    "CStruct only supports native types that are a multiple of 8 bits wide (was passed: %ld)", bits);
             }
 
             /* Do allocation. */
@@ -398,7 +400,8 @@ static void get_attribute(MVMThreadContext *tc, MVMSTable *st, MVMObject *root,
                             obj = MVM_nativecall_make_cstruct(tc, typeobj, cobj);
                         }
                         else if(type == MVM_CSTRUCT_ATTR_CUNION) {
-                            obj = MVM_nativecall_make_cunion(tc, typeobj, cobj);
+                            obj = MVM_nativecall_make_cunion(tc, typeobj,
+                                (char *)body->cstruct + repr_data->struct_offsets[slot]);
                         }
                         else if(type == MVM_CSTRUCT_ATTR_CPTR) {
                             obj = MVM_nativecall_make_cpointer(tc, typeobj, cobj);
