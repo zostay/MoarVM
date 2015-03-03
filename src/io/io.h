@@ -82,8 +82,8 @@ struct MVMIOSockety {
  * Due to a (maybe?) unfortunate conflation of "datagram" and "connectionless"
  * with berkeley sockets, these also pass an address pointer on every call. */
 struct MVMIOSyncDatagramy {
-    void (*sendto) (MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, char *address);
-    MVMObject * (*recvfrom) (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address);
+    void (*sendto) (MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, MVMObject *address);
+    MVMObject * (*recvfrom) (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, MVMObject *address, MVMObject *res_type);
 };
 
 /* I/O operations on handles that can do interactive readline. */

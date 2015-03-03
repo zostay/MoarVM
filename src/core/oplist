@@ -692,11 +692,11 @@ getattrsref_n       w(obj) r(obj) r(obj) r(str) :pure
 getattrsref_s       w(obj) r(obj) r(obj) r(str) :pure
 nativecallsizeof    w(int64) r(obj)
 
-resolvehostname     w(obj) r(str) r(int64)
+resolvehostname     w(obj) r(str) r(int64) r(obj)
 
 # sync udp sockets
 udpsocket           w(obj)
-recvfrom            w(obj) r(obj) r(int64) r(obj)
+recvfrom            w(obj) r(obj) r(int64) r(obj) r(obj)
 sendto              r(obj) r(obj) r(int64) r(obj)
 
 # Spesh ops. Naming convention: start with sp_. Must all be marked .s, which
