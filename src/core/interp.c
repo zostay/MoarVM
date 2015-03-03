@@ -4506,11 +4506,11 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 goto NEXT;
             OP(udpsocket):
                 MVM_exception_throw_adhoc(tc, "udpsocket NYI");
-                cur_op += 8;
+                cur_op += 2;
                 goto NEXT;
             OP(recvfrom):
                 MVM_exception_throw_adhoc(tc, "recvfrom NYI");
-                cur_op += 8;
+                cur_op += 10;
                 goto NEXT;
             OP(sendto):
                 MVM_exception_throw_adhoc(tc, "sendto NYI");
