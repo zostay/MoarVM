@@ -161,7 +161,7 @@ static void udp_socket_sendto( MVMThreadContext *tc, MVMOSHandle *h, MVMArray *m
     MVM_exception_throw_adhoc(tc, "udp_socket_sendto: NYI");
 }
 
-static MVMObject * recvfrom (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address) {
+static MVMObject * udp_socket_recvfrom (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address) {
     MVM_exception_throw_adhoc(tc, "udp_socket_recvfrom: NYI");
     return NULL;
 }
@@ -204,6 +204,7 @@ static const MVMIOOps op_table = {
     NULL,
     NULL,
     NULL,
+    NULL,
     gc_free
 };
 
@@ -217,6 +218,7 @@ static const MVMIOOps udp_op_table = {
     &seekable,
     &udp_sockety,
     &syncdatagramy,
+    NULL,
     NULL,
     NULL,
     NULL
