@@ -62,9 +62,13 @@ struct sockaddr * MVM_io_resolve_host_name(MVMThreadContext *tc, MVMString *host
         if (result->ai_addr->sa_family == AF_INET6) {
             dest = MVM_malloc(sizeof(struct sockaddr_in6));
             memcpy(dest, result->ai_addr, sizeof(struct sockaddr_in6));
-        } else {
+        } else if (result->ai_addr->sa_family == AF_INET) {
             dest = MVM_malloc(sizeof(struct sockaddr));
             memcpy(dest, result->ai_addr, sizeof(struct sockaddr));
+        } else {
+            int family = result->ai_addr->sa_family;
+            freeaddrinfo(result);
+            MVM_exception_throw_adhoc(tc, "Don't know how to handle address family number %d", family);
         }
     }
     else {
@@ -91,8 +95,12 @@ MVMObject * MVM_io_resolve_host_name_into_buf(MVMThreadContext *tc, MVMString *h
 
         if (result->ai_addr->sa_family == AF_INET6) {
             addr_size = sizeof(struct sockaddr_in6);
+        } else if (result->ai_addr->sa_family == AF_INET) {
+            addr_size = sizeof(struct sockaddr);
         } else {
-            addr_size = sizeof(struct sockaddr_in);
+            int family = result->ai_addr->sa_family;
+            freeaddrinfo(result);
+            MVM_exception_throw_adhoc(tc, "Don't know how to handle address family number %d", family);
         }
 
         MVMROOT(tc, host, {
@@ -107,7 +115,7 @@ MVMObject * MVM_io_resolve_host_name_into_buf(MVMThreadContext *tc, MVMString *h
         res_buf->body.elems    = addr_size;
 
         freeaddrinfo(result);
-        return res_buf;
+        return (MVMObject *)res_buf;
     }
     else {
         freeaddrinfo(result);
@@ -198,7 +206,7 @@ static void udp_socket_connect(MVMThreadContext *tc, MVMOSHandle *h, MVMString *
     MVM_exception_throw_adhoc(tc, "udp_socket_connect: NYI");
 }
 
-static void udp_socket_sendto( MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, char *address) {
+static void udp_socket_sendto( MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, MVMObject *address) {
     MVM_exception_throw_adhoc(tc, "udp_socket_sendto: NYI");
 }
 
