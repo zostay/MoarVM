@@ -692,12 +692,12 @@ getattrsref_n       w(obj) r(obj) r(obj) r(str) :pure
 getattrsref_s       w(obj) r(obj) r(obj) r(str) :pure
 nativecallsizeof    w(int64) r(obj)
 
-resolvehostname     w(obj) r(str) r(int64)          # fill a buffer (to be used with udp functions
+resolvehostname     w(obj) r(str) r(int64)
 
 # sync udp sockets
 udpsocket           w(obj)
-recvfrom            w(obj) r(obj) r(int64) r(obj) # message buffer, socket, flags, address buffer
-sendto              r(obj) r(obj) r(int64) r(obj) #  socket, message, flags, address buffer
+recvfrom            w(obj) r(obj) r(int64) r(obj)
+sendto              r(obj) r(obj) r(int64) r(obj)
 
 # Spesh ops. Naming convention: start with sp_. Must all be marked .s, which
 # is how the validator knows to exclude them.
