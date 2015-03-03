@@ -380,6 +380,7 @@ static const MVMIOOps op_table = {
     &seekable,
     NULL,
     NULL,
+    NULL,
     &lockable,
     NULL,
     gc_free

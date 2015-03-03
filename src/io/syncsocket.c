@@ -19,6 +19,11 @@ typedef struct {
     int          accept_status;
 } MVMIOSyncSocketData;
 
+typedef struct {
+    uv_udp_t   *udp_sock;
+    uv_buf_t   *temp_buf;
+} MVMIOSyncUdpSocketData;
+
 static MVMint64 do_close(MVMThreadContext *tc, MVMIOSyncSocketData *data) {
     if (data->ss.handle) {
          uv_close((uv_handle_t *)data->ss.handle, NULL);
@@ -144,6 +149,23 @@ static void socket_bind(MVMThreadContext *tc, MVMOSHandle *h, MVMString *host, M
     }
 }
 
+static void udp_socket_bind(MVMThreadContext *tc, MVMOSHandle *h, MVMString *host, MVMint64 port) {
+    MVM_exception_throw_adhoc(tc, "udp_socket_bind: NYI");
+}
+
+static void udp_socket_connect(MVMThreadContext *tc, MVMOSHandle *h, MVMString *host, MVMint64 port) {
+    MVM_exception_throw_adhoc(tc, "udp_socket_connect: NYI");
+}
+
+static void udp_socket_sendto( MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, char *address) {
+    MVM_exception_throw_adhoc(tc, "udp_socket_sendto: NYI");
+}
+
+static MVMObject * recvfrom (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address) {
+    MVM_exception_throw_adhoc(tc, "udp_socket_recvfrom: NYI");
+    return NULL;
+}
+
 static MVMObject * socket_accept(MVMThreadContext *tc, MVMOSHandle *h);
 
 /* IO ops table, populated with functions. */
@@ -164,6 +186,12 @@ static const MVMIOSeekable          seekable = { MVM_io_syncstream_seek,
 static const MVMIOSockety            sockety = { socket_connect,
                                                  socket_bind,
                                                  socket_accept };
+static const MVMIOSockety        udp_sockety = { udp_socket_connect,
+                                                 udp_socket_bind,
+                                                 NULL };
+static const MVMIOSyncDatagramy syncdatagramy= { udp_socket_sendto,
+                                                 udp_socket_recvfrom };
+
 static const MVMIOOps op_table = {
     &closable,
     &encodable,
@@ -177,6 +205,21 @@ static const MVMIOOps op_table = {
     NULL,
     NULL,
     gc_free
+};
+
+static const MVMIOOps udp_op_table = {
+    &closable,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &seekable,
+    &udp_sockety,
+    &syncdatagramy,
+    NULL,
+    NULL,
+    NULL
 };
 
 static MVMObject * socket_accept(MVMThreadContext *tc, MVMOSHandle *h) {
@@ -226,8 +269,17 @@ MVMObject * MVM_io_socket_create(MVMThreadContext *tc, MVMint64 listen) {
     return (MVMObject *)result;
 }
 
+MVMObject * MVM_io_socket_udp_create(MVMThreadContext *tc) {
+    MVMOSHandle         * const result = (MVMOSHandle *)MVM_repr_alloc_init(tc, tc->instance->boot_types.BOOTIO);
+    MVMIOSyncSocketData * const data   = MVM_calloc(1, sizeof(MVMIOSyncUdpSocketData));
+    result->body.ops  = &udp_op_table;
+    result->body.data = data;
+    return (MVMObject *)result;
+}
+
 MVMString * MVM_io_get_hostname(MVMThreadContext *tc) {
     char hostname[65];
     gethostname(hostname, 65);
     return MVM_string_ascii_decode_nt(tc, tc->instance->VMString, hostname);
 }
+

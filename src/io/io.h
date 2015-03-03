@@ -10,6 +10,7 @@ struct MVMIOOps {
     const MVMIOAsyncWritable *async_writable;
     const MVMIOSeekable      *seekable;
     const MVMIOSockety       *sockety;
+    const MVMIOSyncDatagramy *datagramy;
     const MVMIOInteractive   *interactive;
     const MVMIOLockable      *lockable;
 
@@ -77,6 +78,14 @@ struct MVMIOSockety {
     MVMObject * (*accept) (MVMThreadContext *tc, MVMOSHandle *h);
 };
 
+/* I/O operations on handles that can do datagram-like things.
+ * Due to a (maybe?) unfortunate conflation of "datagram" and "connectionless"
+ * with berkeley sockets, these also pass an address pointer on every call. */
+struct MVMIOSyncDatagramy {
+    void (*sendto) (MVMThreadContext *tc, MVMOSHandle *h, MVMArray *message, MVMint64 flags, char *address);
+    MVMObject * (*recvfrom) (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address);
+};
+
 /* I/O operations on handles that can do interactive readline. */
 struct MVMIOInteractive {
     MVMString * (*read_line) (MVMThreadContext *tc, MVMOSHandle *h, MVMString *prompt);
@@ -115,3 +124,5 @@ void MVM_io_truncate(MVMThreadContext *tc, MVMObject *oshandle, MVMint64 offset)
 void MVM_io_connect(MVMThreadContext *tc, MVMObject *oshandle, MVMString *host, MVMint64 port);
 void MVM_io_bind(MVMThreadContext *tc, MVMObject *oshandle, MVMString *host, MVMint64 port);
 MVMObject * MVM_io_accept(MVMThreadContext *tc, MVMObject *oshandle);
+MVMObject * MVM_io_recvfrom(MVMThreadContext *tc, MVMObject *socket, MVMint64 flags, MVMObject *address);
+void MVM_io_sendto(MVMThreadContext *tc, MVMObject *socket, MVMObject *message, MVMint64 flags, MVMObject *address);
