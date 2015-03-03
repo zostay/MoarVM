@@ -68,11 +68,52 @@ struct sockaddr * MVM_io_resolve_host_name(MVMThreadContext *tc, MVMString *host
         }
     }
     else {
+        freeaddrinfo(result);
         MVM_exception_throw_adhoc(tc, "Failed to resolve host name");
     }
     freeaddrinfo(result);
 
     return dest;
+}
+
+MVMObject * MVM_io_resolve_host_name_into_buf(MVMThreadContext *tc, MVMString *host, MVMint64 port, MVMObject *buf_type) {
+    char *host_cstr = MVM_string_utf8_encode_C_string(tc, host);
+    struct addrinfo *result;
+    int error;
+    char port_cstr[8];
+    snprintf(port_cstr, 8, "%d", (int)port);
+
+    error = getaddrinfo(host_cstr, port_cstr, NULL, &result);
+    MVM_free(host_cstr);
+    if (error == 0) {
+        int addr_size;
+        MVMArray *res_buf;
+
+        if (result->ai_addr->sa_family == AF_INET6) {
+            addr_size = sizeof(struct sockaddr_in6);
+        } else {
+            addr_size = sizeof(struct sockaddr_in);
+        }
+
+        MVMROOT(tc, host, {
+            res_buf = (MVMArray *)MVM_repr_alloc_init(tc, buf_type);
+        });
+
+        res_buf->body.slots.i8 = MVM_malloc(addr_size);
+        memcpy(res_buf->body.slots.i8, result->ai_addr, addr_size);
+
+        res_buf->body.start    = 0;
+        res_buf->body.ssize    = addr_size;
+        res_buf->body.elems    = addr_size;
+
+        freeaddrinfo(result);
+        return res_buf;
+    }
+    else {
+        freeaddrinfo(result);
+        MVM_exception_throw_adhoc(tc, "Failed to resolve host name");
+        return NULL;
+    }
 }
 
 static void on_connect(uv_connect_t* req, int status) {
@@ -161,7 +202,7 @@ static void udp_socket_sendto( MVMThreadContext *tc, MVMOSHandle *h, MVMArray *m
     MVM_exception_throw_adhoc(tc, "udp_socket_sendto: NYI");
 }
 
-static MVMObject * udp_socket_recvfrom (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, char *address) {
+static MVMObject * udp_socket_recvfrom (MVMThreadContext *tc, MVMOSHandle *h, MVMint64 flags, MVMObject *address, MVMObject *res_type) {
     MVM_exception_throw_adhoc(tc, "udp_socket_recvfrom: NYI");
     return NULL;
 }

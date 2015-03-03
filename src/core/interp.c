@@ -4500,6 +4500,22 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 GET_REG(cur_op, 0).i64 = MVM_nativecall_sizeof(tc, GET_REG(cur_op, 2).o);
                 cur_op += 4;
                 goto NEXT;
+            OP(resolvehostname):
+                GET_REG(cur_op, 0).o = MVM_io_resolve_host_name_into_buf(tc, GET_REG(cur_op, 2).s, GET_REG(cur_op, 4).i64, GET_REG(cur_op, 6).o);
+                cur_op += 8;
+                goto NEXT;
+            OP(udpsocket):
+                MVM_exception_throw_adhoc(tc, "udpsocket NYI");
+                cur_op += 8;
+                goto NEXT;
+            OP(recvfrom):
+                MVM_exception_throw_adhoc(tc, "recvfrom NYI");
+                cur_op += 8;
+                goto NEXT;
+            OP(sendto):
+                MVM_exception_throw_adhoc(tc, "sendto NYI");
+                cur_op += 8;
+                goto NEXT;
             OP(sp_log):
                 if (tc->cur_frame->spesh_log_idx >= 0) {
                     MVM_ASSIGN_REF(tc, &(tc->cur_frame->static_info->common.header),
