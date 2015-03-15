@@ -324,7 +324,7 @@ void MVM_serialization_write_varint(MVMThreadContext *tc, MVMSerializationWriter
     offset = *(writer->cur_write_offset);
 
     while (--count) {
-        buffer[offset++] = value & 0x7F | 0x80;
+        buffer[offset++] = (value & 0x7F) | 0x80;
         value = value >> 7;
     }
     if (storage_needed == 9) {
@@ -2269,22 +2269,27 @@ void MVM_serialization_finish_deserialize_method_cache(MVMThreadContext *tc, MVM
     }
 }
 
-/* Repossess an object or STable. */
+/* Repossess an object or STable. Ignores those not matching the specified
+ * type (where 0 = object, 1 = STable). */
 static void repossess(MVMThreadContext *tc, MVMSerializationReader *reader, MVMint64 i,
-                      MVMObject *repo_conflicts) {
+                      MVMObject *repo_conflicts, MVMint32 type) {
+    MVMuint32 slot;
+
     /* Calculate location of table row. */
     char *table_row = reader->root.repos_table + i * REPOS_TABLE_ENTRY_SIZE;
 
-    /* Do appropriate type of repossession. */
+    /* Do appropriate type of repossession, provided it matches the type of
+     * thing we're current repossessing. */
     MVMint32 repo_type = read_int32(table_row, 0);
+    if (repo_type != type)
+        return;
     if (repo_type == 0) {
+        char      *obj_table_row;
+        MVMSTable *updated_st;
+
         /* Get object to repossess. */
         MVMSerializationContext *orig_sc = locate_sc(tc, reader, read_int32(table_row, 8));
         MVMObject *orig_obj = MVM_sc_get_object(tc, orig_sc, read_int32(table_row, 12));
-
-        /* Put it into objects root set at the apporpriate slot. */
-        MVMuint32 slot = read_int32(table_row, 4);
-        MVM_sc_set_object(tc, reader->root.sc, slot, orig_obj);
 
         /* If we have a reposession conflict, make a copy of the original object
          * and reference it from the conflicts list. Push the original (about to
@@ -2307,10 +2312,24 @@ static void repossess(MVMThreadContext *tc, MVMSerializationReader *reader, MVMi
             });
         }
 
+        /* Put it into objects root set at the apporpriate slot. */
+        slot = read_int32(table_row, 4);
+        MVM_sc_set_object(tc, reader->root.sc, slot, orig_obj);
+        MVM_sc_set_obj_sc(tc, orig_obj, reader->root.sc);
+
         /* Clear it up, since we'll re-allocate all the bits inside
          * it on deserialization. */
         if (REPR(orig_obj)->gc_free)
             REPR(orig_obj)->gc_free(tc, orig_obj);
+
+        /* The object's STable may have changed as a result of the
+         * repossession (perhaps due to mixing in to it), so put the
+         * STable it should now have in place. */
+        obj_table_row = reader->root.objects_table + slot * OBJECTS_TABLE_ENTRY_SIZE;
+        updated_st = lookup_stable(tc, reader,
+            read_int32(obj_table_row, 0),   /* The SC in the dependencies table, + 1 */
+            read_int32(obj_table_row, 4));  /* The index in that SC */
+        MVM_ASSIGN_REF(tc, &(orig_obj->header), orig_obj->st, updated_st);
 
         /* Put this on the list of things we should deserialize right away. */
         worklist_add_index(tc, &(reader->wl_objects), slot);
@@ -2320,15 +2339,16 @@ static void repossess(MVMThreadContext *tc, MVMSerializationReader *reader, MVMi
         MVMSerializationContext *orig_sc = locate_sc(tc, reader, read_int32(table_row, 8));
         MVMSTable *orig_st = MVM_sc_get_stable(tc, orig_sc, read_int32(table_row, 12));
 
-        /* Put it into STables root set at the apporpriate slot. */
-        MVMuint32 slot = read_int32(table_row, 4);
-        MVM_sc_set_stable(tc, reader->root.sc, slot, orig_st);
-
         /* Make sure we don't have a reposession conflict. */
         if (MVM_sc_get_stable_sc(tc, orig_st) != orig_sc)
             fail_deserialize(tc, reader,
                 "STable conflict detected during deserialization.\n"
                 "(Probable attempt to load two modules that cannot be loaded together).");
+
+        /* Put it into STables root set at the apporpriate slot. */
+        slot = read_int32(table_row, 4);
+        MVM_sc_set_stable(tc, reader->root.sc, slot, orig_st);
+        MVM_sc_set_stable_sc(tc, orig_st, reader->root.sc);
 
         /* XXX TODO: consider clearing up STable, however we must do it out of
          * this repossess routine, since we may depend on original data to do
@@ -2407,10 +2427,14 @@ void MVM_serialization_deserialize(MVMThreadContext *tc, MVMSerializationContext
         codes_static, OBJECT_BODY(codes_static),
         scodes + reader->root.num_closures);
 
-    /* If we're repossessing objects and STables from other SCs, then first
-      * get those raw objects into our root set. */
+    /* If we're repossessing STables and objects from other SCs, then first
+      * get those raw objects into our root set. Note we do all the STables,
+      * then all the objects, since the objects may, post-repossession, refer
+      * to a repossessed STable. */
      for (i = 0; i < reader->root.num_repos; i++)
-        repossess(tc, reader, i, repo_conflicts);
+        repossess(tc, reader, i, repo_conflicts, 1);
+     for (i = 0; i < reader->root.num_repos; i++)
+        repossess(tc, reader, i, repo_conflicts, 0);
 
     /* Enter the work loop to deal with the things we immediately need to
      * handle in order to complete repossession object deserialization. */

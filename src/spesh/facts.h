@@ -15,12 +15,8 @@ struct MVMSpeshFacts {
     /* Known value, if any. */
     union {
         MVMObject *o;
-        MVMint64 i64;
-        MVMint32 i32;
-        MVMint16 i16;
-        MVMint8  i8;
-        MVMnum32 n32;
-        MVMnum64 n64;
+        MVMint64 i;
+        MVMnum64 n;
         MVMString *s;
     } value;
 

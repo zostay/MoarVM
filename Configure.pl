@@ -305,6 +305,7 @@ push @cflags, $config{ccwarnflags};
 push @cflags, $config{ccdefflags};
 push @cflags, $config{ccshared}     unless $args{static};
 push @cflags, '-fno-omit-frame-pointer -fsanitize=address' if $args{asan};
+push @cflags, $ENV{CFLAGS} if $ENV{CFLAGS};
 $config{cflags} = join ' ', @cflags;
 
 # generate LDFLAGS
@@ -314,6 +315,7 @@ push @ldflags, $config{lddebugflags} if $args{debug};
 push @ldflags, $config{ldinstflags}       if $args{instrument};
 push @ldflags, $config{ldrpath}           unless $args{static};
 push @ldflags, $^O eq 'darwin' ? '-faddress-sanitizer' : '-fsanitize=address' if $args{asan};
+push @ldflags, $ENV{LDFLAGS} if $ENV{LDFLAGS};
 $config{ldflags} = join ' ', @ldflags;
 
 # setup library names
@@ -570,7 +572,7 @@ sub setup_cross {
     my $crossconf = "--build=$build --host=$host";
 
     for (\$build, \$host) {
-        if ($$_ =~ /-(\w+)$/) {
+        if ($$_ =~ /-(\w+)-\w+$/) {
             $$_ = $1;
             if (!exists $::SYSTEMS{$1}) {
                 softfail("unknown OS '$1'");

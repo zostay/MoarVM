@@ -1,4 +1,5 @@
 #include "moar.h"
+#include <platform/threads.h>
 
 #define init_mutex(loc, name) do { \
     if ((init_stat = uv_mutex_init(&loc)) < 0) { \
@@ -90,7 +91,7 @@ MVMInstance * MVM_vm_create_instance(void) {
                 instance->main_thread, STABLE(instance->boot_types.BOOTThread))));
     instance->threads->body.stage = MVM_thread_stage_started;
     instance->threads->body.tc = instance->main_thread;
-    instance->threads->body.thread_id = uv_thread_self();
+    instance->threads->body.thread_id = MVM_platform_thread_id();
 
     /* Create compiler registry */
     instance->compiler_registry = MVM_repr_alloc_init(instance->main_thread, instance->boot_types.BOOTHash);
@@ -308,4 +309,33 @@ void MVM_vm_destroy_instance(MVMInstance *instance) {
 
     /* Clear up VM instance memory. */
     MVM_free(instance);
+}
+
+void MVM_vm_set_clargs(MVMInstance *instance, int argc, char **argv) {
+    instance->num_clargs = argc;
+    instance->raw_clargs = argv;
+}
+
+void MVM_vm_set_exec_name(MVMInstance *instance, const char *exec_name) {
+    instance->exec_name = exec_name;
+}
+
+void MVM_vm_set_prog_name(MVMInstance *instance, const char *prog_name) {
+    instance->prog_name = prog_name;
+}
+
+void MVM_vm_set_lib_path(MVMInstance *instance, int count, const char **lib_path) {
+    enum { MAX_COUNT = sizeof instance->lib_path / sizeof *instance->lib_path };
+
+    int i = 0;
+
+    if (count > MAX_COUNT)
+        MVM_panic(1, "Cannot set more than %i library paths", MAX_COUNT);
+
+    for (; i < count; ++i)
+        instance->lib_path[i] = lib_path[i];
+
+    /* Clear remainder to allow repeated calls */
+    for (; i < MAX_COUNT; ++i)
+        instance->lib_path[i] = NULL;
 }
