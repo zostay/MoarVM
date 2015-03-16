@@ -1000,6 +1000,8 @@ MVMObject * MVM_nativecall_cast(MVMThreadContext *tc, MVMObject *target_spec, MV
 
     if (REPR(source)->ID == MVM_REPR_ID_MVMCStruct) {
         data_body = unmarshal_cstruct(tc, source);
+    } else if (REPR(source)->ID == MVM_REPR_ID_MVMCPPStruct) {
+        data_body = unmarshal_cppstruct(tc, source);
     } else if (REPR(source)->ID == MVM_REPR_ID_MVMCPointer) {
         data_body = unmarshal_cpointer(tc, source);
     } else if (REPR(source)->ID == MVM_REPR_ID_MVMCArray) {
