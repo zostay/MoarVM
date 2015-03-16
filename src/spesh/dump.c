@@ -209,7 +209,11 @@ static void dump_facts(MVMThreadContext *tc, DumpStr *ds, MVMSpeshGraph *g) {
         for (j = 0; j < num_facts; j++) {
             MVMint32 usages = g->facts[i][j].usages;
             MVMint32 flags  = g->facts[i][j].flags;
-            appendf(ds, "    r%d(%d): usages=%d, flags=%d\n", i, j, usages, flags);
+            if (g->facts[i][j].writer && g->facts[i][j].writer->info->opcode == MVM_SSA_PHI) {
+                appendf(ds, "    r%d(%d): usages=%d, flags=%d (merged from %d regs)\n", i, j, usages, flags, g->facts[i][j].writer->info->num_operands - 1);
+            } else {
+                appendf(ds, "    r%d(%d): usages=%d, flags=%d\n", i, j, usages, flags);
+            }
         }
     }
 }
