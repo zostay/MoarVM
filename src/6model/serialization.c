@@ -1052,6 +1052,10 @@ static void serialize_object(MVMThreadContext *tc, MVMSerializationWriter *write
     MVMuint32 sc;
     MVMuint32 sc_idx;
     MVMuint32 packed;
+
+    if (!obj)
+        return;
+
     get_stable_ref_info(tc, writer, STABLE(obj), &sc, &sc_idx);
 
     /* Ensure there's space in the objects table; grow if not. */

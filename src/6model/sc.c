@@ -42,6 +42,7 @@ MVMObject * MVM_sc_create(MVMThreadContext *tc, MVMString *handle) {
                 MVM_ASSIGN_REF(tc, &(sc->common.header), scb->handle, handle);
                 MVM_repr_init(tc, (MVMObject *)sc);
             }
+            fprintf(stderr, "%s:%d sc->body->sc_idx=%d\n", __FILE__, __LINE__, sc->body->sc_idx);
             uv_mutex_unlock(&tc->instance->mutex_sc_weakhash);
         });
     });

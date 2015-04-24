@@ -66,7 +66,7 @@ MVM_STATIC_INLINE MVMSerializationContext * MVM_sc_get_collectable_sc(MVMThreadC
     assert(!(col->flags & MVM_CF_FORWARDER_VALID));
     sc_idx = MVM_get_idx_of_sc(col);
     assert(sc_idx != ~0);
-    return sc_idx > 0 ? tc->instance->all_scs[sc_idx]->sc : NULL;
+    return sc_idx > 0 && tc->instance->all_scs[sc_idx] ? tc->instance->all_scs[sc_idx]->sc : NULL;
 }
 
 /* Gets an object's SC. */

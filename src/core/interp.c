@@ -4519,6 +4519,20 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 GET_REG(cur_op, 0).o = MVM_code_location(tc, GET_REG(cur_op, 2).o);
                 cur_op += 4;
                 goto NEXT;
+            OP(nukescidx): {
+                MVMSerializationContext *sc  = (MVMSerializationContext *)GET_REG(cur_op, 0).o;
+                if (REPR(sc)->ID != MVM_REPR_ID_SCRef)
+                    MVM_exception_throw_adhoc(tc,
+                        "Must provide an SCRef operand to setobjsc");
+                fprintf(stderr, "a) %d %d\n", sc->body->sc_idx, MVM_get_idx_of_sc(&((MVMObject *)sc)->header));
+                //~ sc->body->sc_idx = 0;
+                //~ REPR(sc)->gc_free(tc, (MVMObject *)sc);
+                //~ tc->instance->all_scs[sc->body->sc_idx]->sc = NULL;
+                tc->instance->all_scs[28]->sc = sc;
+                fprintf(stderr, "b) %d %d\n", sc->body->sc_idx, MVM_get_idx_of_sc(&((MVMObject *)sc)->header));
+                cur_op += 2;
+                goto NEXT;
+            }
             OP(sp_log):
                 if (tc->cur_frame->spesh_log_idx >= 0) {
                     MVM_ASSIGN_REF(tc, &(tc->cur_frame->static_info->common.header),

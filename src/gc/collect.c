@@ -329,7 +329,7 @@ void MVM_gc_mark_collectable(MVMThreadContext *tc, MVMGCWorklist *worklist, MVMC
     assert(!(new_addr->flags & MVM_CF_FORWARDER_VALID));
     /*assert(REPR(new_addr));*/
     sc_idx = MVM_get_idx_of_sc(new_addr);
-    if (sc_idx > 0)
+    if (sc_idx > 0 && tc->instance->all_scs[sc_idx] && tc->instance->all_scs[sc_idx]->sc)
         MVM_gc_worklist_add(tc, worklist, &(tc->instance->all_scs[sc_idx]->sc));
 
     if (!(new_addr->flags & (MVM_CF_TYPE_OBJECT | MVM_CF_STABLE))) {

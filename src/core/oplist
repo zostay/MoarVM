@@ -696,6 +696,7 @@ normalizecodes      r(obj) r(int64) r(obj)
 strfromcodes        w(str) r(obj)
 strtocodes          r(str) r(int64) r(obj)
 getcodelocation     w(obj) r(obj) :pure
+nukescidx           r(obj)
 
 
 # Spesh ops. Naming convention: start with sp_. Must all be marked .s, which
