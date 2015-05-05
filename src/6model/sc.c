@@ -42,7 +42,6 @@ MVMObject * MVM_sc_create(MVMThreadContext *tc, MVMString *handle) {
                 MVM_ASSIGN_REF(tc, &(sc->common.header), scb->handle, handle);
                 MVM_repr_init(tc, (MVMObject *)sc);
             }
-            fprintf(stderr, "%s:%d sc->body->sc_idx=%d\n", __FILE__, __LINE__, sc->body->sc_idx);
             uv_mutex_unlock(&tc->instance->mutex_sc_weakhash);
         });
     });
@@ -158,8 +157,8 @@ MVMObject * MVM_sc_get_object(MVMThreadContext *tc, MVMSerializationContext *sc,
         return roots[idx] ? roots[idx] : MVM_serialization_demand_object(tc, sc, idx);
     else
         MVM_exception_throw_adhoc(tc,
-            "Probable version skew in pre-compiled '%s' (cause: no object at index %"PRId64")",
-            MVM_string_utf8_encode_C_string(tc, sc->body->description), idx);
+            "Probable version skew in pre-compiled '%s' (cause: no object at index %"PRId64"/%"PRId64")",
+            MVM_string_utf8_encode_C_string(tc, sc->body->description), idx, count);
 }
 
 MVMObject * MVM_sc_get_sc_object(MVMThreadContext *tc, MVMCompUnit *cu,
@@ -282,7 +281,7 @@ MVMObject * MVM_sc_get_code(MVMThreadContext *tc, MVMSerializationContext *sc, M
     }
     else {
         MVM_exception_throw_adhoc(tc,
-            "Probable version skew in pre-compiled '%s' (cause: no code ref at index %"PRId64")",
+            "MVM_sc_get_code: Probable version skew in pre-compiled '%s' (cause: no code ref at index %"PRId64")",
             MVM_string_utf8_encode_C_string(tc, sc->body->description), idx);
     }
 }

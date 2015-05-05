@@ -4521,15 +4521,48 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 goto NEXT;
             OP(nukescidx): {
                 MVMSerializationContext *sc  = (MVMSerializationContext *)GET_REG(cur_op, 0).o;
+                MVMObject **root_objects, *root_codes, *obj;
+                MVMSTable **root_stables, *stable;
+                MVMint64 i, count;
+                MVMCollectable *col;
                 if (REPR(sc)->ID != MVM_REPR_ID_SCRef)
                     MVM_exception_throw_adhoc(tc,
                         "Must provide an SCRef operand to setobjsc");
-                fprintf(stderr, "a) %d %d\n", sc->body->sc_idx, MVM_get_idx_of_sc(&((MVMObject *)sc)->header));
-                //~ sc->body->sc_idx = 0;
-                //~ REPR(sc)->gc_free(tc, (MVMObject *)sc);
-                //~ tc->instance->all_scs[sc->body->sc_idx]->sc = NULL;
-                tc->instance->all_scs[28]->sc = sc;
-                fprintf(stderr, "b) %d %d\n", sc->body->sc_idx, MVM_get_idx_of_sc(&((MVMObject *)sc)->header));
+
+                root_objects = sc->body->root_objects;
+                count        = sc->body->num_objects;
+                fprintf(stderr, "nukescidx) num_objects %"PRId64"\n", count);
+                for (i = 0; i < count; i++) {
+                    obj = root_objects[i];
+                    col = &obj->header;
+                    fprintf(stderr, "nukescidx) MVM_sc_get_obj_sc %p\n", MVM_sc_get_obj_sc(tc, obj));
+                    col->sc_forward_u.sc.sc_idx = 0;
+                    fprintf(stderr, "nukescidx) MVM_sc_get_obj_sc %p\n", MVM_sc_get_obj_sc(tc, obj));
+                }
+                sc->body->num_objects = 0;
+
+                root_stables = sc->body->root_stables;
+                count        = sc->body->num_stables;
+                fprintf(stderr, "nukescidx) num_stables %"PRId64"\n", count);
+                for (i = 0; i < count; i++) {
+                    stable                      = root_stables[i];
+                    col                         = &stable->header;
+                    col->sc_forward_u.sc.sc_idx = 0;
+                }
+                sc->body->num_stables = 0;
+
+                root_codes = sc->body->root_codes;
+                count      = MVM_repr_elems(tc, root_codes);
+                fprintf(stderr, "nukescidx) num_codes %"PRId64"\n", count);
+                for (i = 0; i < count; i++) {
+                    obj = MVM_repr_at_pos_o(tc, root_codes, i);
+                    if (MVM_is_null(tc, obj))
+                        obj = MVM_serialization_demand_code(tc, sc, i);
+                    col                         = &obj->header;
+                    col->sc_forward_u.sc.sc_idx = 0;
+                }
+                sc->body->root_codes = NULL;
+
                 cur_op += 2;
                 goto NEXT;
             }
