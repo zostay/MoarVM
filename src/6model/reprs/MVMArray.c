@@ -601,7 +601,6 @@ static void unshift(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *
     if (body->start < 1) {
         MVMuint64 n = 8;
         MVMuint64 elems = body->elems;
-        MVMuint64 i;
 
         /* grow the array */
         set_size_internal(tc, body, elems + n, repr_data);
@@ -765,7 +764,7 @@ static void shift(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *da
 
 /* This whole splice optimization can be optimized for the case we have two
  * MVMArray representation objects. */
-static void splice(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *data, MVMObject *from, MVMint64 offset, MVMuint64 count) {
+static void asplice(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *data, MVMObject *from, MVMint64 offset, MVMuint64 count) {
     MVMArrayREPRData *repr_data = (MVMArrayREPRData *)st->REPR_data;
     MVMArrayBody     *body      = (MVMArrayBody *)data;
 
@@ -865,6 +864,8 @@ static void splice(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *d
             case MVM_ARRAY_U8:
                 kind = MVM_reg_int64;
                 break;
+            default:
+                abort(); /* never reached, silence compiler warnings */
         }
         for (i = 0; i < elems1; i++) {
             MVMRegister to_copy;
@@ -1042,7 +1043,7 @@ static void serialize_repr_data(MVMThreadContext *tc, MVMSTable *st, MVMSerializ
 static void deserialize_repr_data(MVMThreadContext *tc, MVMSTable *st, MVMSerializationReader *reader) {
     MVMArrayREPRData *repr_data = (MVMArrayREPRData *)MVM_malloc(sizeof(MVMArrayREPRData));
 
-    MVMObject *type = reader->root.version >= 7 ? MVM_serialization_read_ref(tc, reader) : NULL;
+    MVMObject *type = MVM_serialization_read_ref(tc, reader);
     MVM_ASSIGN_REF(tc, &(st->header), repr_data->elem_type, type);
     repr_data->slot_type = MVM_ARRAY_OBJ;
     repr_data->elem_size = sizeof(MVMObject *);
@@ -1200,7 +1201,7 @@ static const MVMREPROps this_repr = {
         pop,
         unshift,
         shift,
-        splice,
+        asplice,
         get_elem_storage_spec
     },    /* pos_funcs */
     MVM_REPR_DEFAULT_ASS_FUNCS,

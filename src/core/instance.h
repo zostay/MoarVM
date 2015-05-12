@@ -45,6 +45,7 @@ struct MVMStringConsts {
     MVMString *name;
     MVMString *attribute;
     MVMString *of;
+    MVMString *rw;
     MVMString *type;
     MVMString *typeobj;
     MVMString *free_str;
@@ -160,8 +161,10 @@ struct MVMInstance {
     /* int -> str cache */
     MVMString **int_to_str_cache;
 
-    /* Specialization installation mutex (global, as it's low contention, so
-     * no real motivation to have it more fine-grained at present). */
+    /* Multi-dispatch cache and specialization installation mutexes
+     * (global, as the additions are quite low contention, so no
+     * real motivation to have it more fine-grained at present). */
+    uv_mutex_t mutex_multi_cache_add;
     uv_mutex_t mutex_spesh_install;
 
     /* Log file for specializations, if we're to log them. */
@@ -315,6 +318,9 @@ struct MVMInstance {
     /* Fixed size allocator. */
     MVMFixedSizeAlloc *fsa;
 
+    /* Normal Form Grapheme state (synthetics table, lookup, etc.). */
+    MVMNFGState *nfg;
+
     /* Next type cache ID, to go in STable. */
     AO_t cur_type_cache_id;
 
@@ -327,4 +333,13 @@ struct MVMInstance {
 
     /* Whether profiling is turned on or not. */
     MVMuint32 profiling;
+
+    /* Cached backend config hash. */
+    MVMObject *cached_backend_config;
 };
+
+/* Returns a true value if we have created user threads (and so are running a
+ * multi-threaded application). */
+MVM_STATIC_INLINE MVMint32 MVM_instance_have_user_threads(MVMThreadContext *tc) {
+    return tc->instance->next_user_thread_id != 2;
+}
